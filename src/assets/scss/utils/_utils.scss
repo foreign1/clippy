@@ -1,0 +1,21 @@
+.u {
+  &_margin {
+    &_top {
+      &-sm {
+        margin-top: 1rem;
+      }
+    }
+  }
+  &_padding {
+    &_lr {
+      &-sm {
+        padding: 0 1rem;
+      }
+    }
+  }
+  &_color {
+    &--danger {
+      color: red;
+    }
+  }
+}
