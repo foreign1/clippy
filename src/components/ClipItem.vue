@@ -1,7 +1,6 @@
 <template>
   <div class="hello">
-    <p v-if="isNoticeActive" class="notify">{{ notice }}</p>
-    <p>{{ msg }}</p>
+    <p style="white-space: pre-line">{{ text }}</p>
     <div class="actions">
       <button @click="copyToClipboard">Copy text</button>
       <button @click="deleteItem">Delete</button>
@@ -10,30 +9,32 @@
 </template>
 
 <script>
+import { eventBus } from "@/main";
+
 export default {
   name: "ClipItem",
   props: {
-    msg: String,
-    index: Number,
-    deleteClipItem: Function,
+    text: String,
   },
   data() {
     return {
-      isNoticeActive: false,
-      notice: "Text copied to clipboard",
+      copyButtonText: "Copy to Clipboard",
     };
   },
   methods: {
     copyToClipboard() {
       this.isNoticeActive = !this.isNoticeActive;
-      navigator.clipboard.writeText(this.msg);
-      setTimeout(() => (this.isNoticeActive = !this.isNoticeActive), 2000);
+      navigator.clipboard.writeText(this.text);
+      this.copyButtonText = "Text copied!";
+      setTimeout(() => (this.copyButtonText = "Copy to Clipboard"), 5000);
     },
     deleteItem() {
-      this.deleteClipItem(this.$vnode.key);
+      eventBus.$emit("deleteClipItem", {
+        type: "text",
+        index: this.$vnode.key,
+      });
     },
   },
-  watch: {},
 };
 </script>
 
