@@ -2,7 +2,8 @@
   "prettier/prettier": [
     "error",
     {
-      "endOfLine": "auto"
+      "endOfLine": "lf"
     }
-  ]
+  ],
+  "endOfLine": "lf"
 }

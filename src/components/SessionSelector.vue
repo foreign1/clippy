@@ -3,6 +3,7 @@
     <div class="onset_header">
       <img alt="Clippy logo" src="@/assets/images/logo.png" />
       <h1 class="onset_header-text">Your clipboard companion</h1>
+      <h4>{{ create_session }}</h4>
     </div>
     <div class="onset_card onset_join">
       <h4>Join Existing Session</h4>
@@ -46,12 +47,13 @@ export default {
       notice: "",
       sessionId: "",
       errorMessage: "",
+      urlCreate: process.env.VUE_APP_CREATE_SESSION,
+      urlJoin: process.env.VUE_APP_JOIN_SESSION,
     };
   },
   methods: {
     async createSession() {
-      const url = "http://localhost:8000/create";
-      fetch(url)
+      fetch(this.urlCreate)
         .then((response) => {
           if (response.status !== 201) {
             throw new Error("Pleaase check your network connection!");
@@ -66,8 +68,7 @@ export default {
         .catch(() => (this.notice = `Please check your network connection!`));
     },
     async joinSession() {
-      const url = "http://localhost:8000/join";
-      fetch(url, {
+      fetch(this.urlJoin, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
