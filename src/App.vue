@@ -52,7 +52,7 @@ export default {
   created() {
     eventBus.$on("addClipItem", (arg) => {
       // this.clipboard[arg.type].push(arg.item);
-      fetch("http://localhost:8000/addItem", {
+      fetch(this.urlAddItem, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
