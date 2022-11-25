@@ -3,7 +3,6 @@
     <div class="onset_header">
       <img alt="Clippy logo" src="@/assets/images/logo.png" />
       <h1 class="onset_header-text">Your clipboard companion</h1>
-      <h4>{{ create_session }}</h4>
     </div>
     <div class="onset_card onset_join">
       <h4>Join Existing Session</h4>
