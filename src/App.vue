@@ -55,6 +55,7 @@ export default {
         response.status === 200 && this.clipboard[arg.type].push(arg.item);
       });
       /*
+        Todo:
         push clipboard to /update
         if push failed, notify user "please check your network connection"
         delete last pushed item
@@ -64,6 +65,7 @@ export default {
     eventBus.$on("deleteClipItem", (arg) => {
       this.clipboard[arg.type].splice(arg.index, 1)[0];
       /*
+        Todo:
         push clipboard to /update
         if push failed, notify user "Please check your network connection1"
         restore last deleted item

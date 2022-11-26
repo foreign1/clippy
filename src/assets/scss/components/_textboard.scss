@@ -1,4 +1,5 @@
 @use "../globals" as g;
+@use "../utils/" as *;
 
 .clipboard-component {
   & div {
@@ -8,17 +9,22 @@
   }
   & .inputBox {
     padding: 1rem;
-    display: grid;
     background-color: g.$accent;
+    display: grid;
     grid-template-columns: 1fr;
 
     @include breakpoint(medium) {
-      grid-template-columns: 2fr 1fr;
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(5, 1fr);
     }
 
     & textarea {
       min-height: 4rem;
       padding: 0.5rem;
+      @include breakpoint(medium) {
+        grid-column: 1/5;
+      }
     }
     & button {
       height: 2.5rem;
@@ -26,12 +32,17 @@
       background-color: g.$accent-light;
       color: g.$accent;
       font-weight: 600;
+      @include breakpoint(medium) {
+        grid-column: 5/6;
+        height: 4rem;
+        margin-top: 0;
+      }
     }
   }
   & .clip-list {
     background-color: g.$accent;
     padding: 1rem;
-    padding-top: 0;
+    padding-top: 0.5rem;
     & .notice-empty-list {
       
       margin-top: 8rem;

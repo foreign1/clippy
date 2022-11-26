@@ -201,13 +201,25 @@ button {
 }
 .clipboard-component .inputBox {
   padding: 1rem;
-  display: grid;
   background-color: #074B87;
+  display: grid;
   grid-template-columns: 1fr;
+}
+@media (min-width: 43.75em) {
+  .clipboard-component .inputBox {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 .clipboard-component .inputBox textarea {
   min-height: 4rem;
   padding: 0.5rem;
+}
+@media (min-width: 43.75em) {
+  .clipboard-component .inputBox textarea {
+    grid-column: 1/5;
+  }
 }
 .clipboard-component .inputBox button {
   height: 2.5rem;
@@ -216,10 +228,17 @@ button {
   color: #074B87;
   font-weight: 600;
 }
+@media (min-width: 43.75em) {
+  .clipboard-component .inputBox button {
+    grid-column: 5/6;
+    height: 4rem;
+    margin-top: 0;
+  }
+}
 .clipboard-component .clip-list {
   background-color: #074B87;
   padding: 1rem;
-  padding-top: 0;
+  padding-top: 0.5rem;
 }
 .clipboard-component .clip-list .notice-empty-list {
   margin-top: 8rem;
@@ -233,6 +252,7 @@ button {
   padding: 0.5rem;
 }
 .clipitem p {
+  text-align: start;
   padding: 1rem 1rem 0;
   word-wrap: break-word;
 }

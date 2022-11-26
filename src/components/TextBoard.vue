@@ -43,7 +43,8 @@ export default {
   },
   methods: {
     addClipItem() {
-      eventBus.$emit("addClipItem", { type: "text", item: this.userInput });
+      this.userInput &&
+        eventBus.$emit("addClipItem", { type: "text", item: this.userInput });
       this.userInput = "";
     },
   },
