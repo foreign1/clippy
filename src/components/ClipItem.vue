@@ -1,9 +1,9 @@
 <template>
-  <div class="hello">
+  <div class="clipitem">
     <p style="white-space: pre-line">{{ text }}</p>
     <div class="actions">
-      <button @click="copyToClipboard">Copy text</button>
-      <button @click="deleteItem">Delete</button>
+      <button class="u_btn--accent" @click="copyToClipboard">Copy text</button>
+      <button class="u_btn--danger" @click="deleteItem">Delete</button>
     </div>
   </div>
 </template>

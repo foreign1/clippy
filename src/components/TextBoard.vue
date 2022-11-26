@@ -1,15 +1,23 @@
 <template>
   <div class="clipboard-component">
-    <div>
+    <div class="inputBox">
       <textarea
         placeholder="Type or paste text to share..."
         v-model="userInput"
+        class="u_brad"
       ></textarea>
-      <button @click="addClipItem">Add to Clippy</button>
+      <button class="u_brad u_margin_top-xsm" @click="addClipItem">
+        Add to Clippy
+      </button>
     </div>
-    <div>
-      <clip-item v-for="(item, index) in clipArray" :key="index" :text="item">
-      </clip-item>
+    <div class="clip-list">
+      <p class="notice-empty-list" v-if="!!!clipArray.length">
+        Shared list empty.<br />Add fresh content to share.
+      </p>
+      <template>
+        <clip-item v-for="(item, index) in clipArray" :key="index" :text="item">
+        </clip-item>
+      </template>
     </div>
   </div>
 </template>

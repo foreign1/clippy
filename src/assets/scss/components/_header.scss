@@ -1,0 +1,35 @@
+// @use "../components" as c;
+@use "../globals" as g;
+
+.header {
+  background-color: g.$accent;
+  color: g.$primary;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  border-radius: 1rem;
+
+  & h1 {
+    font-size: 20px;
+    & button {
+      width: 4.5rem;
+      height: 2rem;
+      border-radius: 0.5rem;
+      margin-left: 1rem;
+      border: 2px solid g.$primary;
+    }
+  }
+  & div {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 1rem;
+    & span {
+      background-color: white;
+      color: g.$font-color;
+      height: 2rem;
+      line-height: 2rem;
+      width: 5rem;
+      border-radius: clamp(0.2rem, 0.1rem + 1vw, 0.5rem);
+    }
+  }
+}

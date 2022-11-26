@@ -1,8 +1,12 @@
+@use "../globals/" as g;
 .u {
   &_margin {
     &_top {
       &-sm {
         margin-top: 1rem;
+      }
+      &-xsm {
+        margin-top: 0.5rem;
       }
     }
   }
@@ -16,6 +20,27 @@
   &_color {
     &--danger {
       color: red;
+    }
+  }
+  &_brad {
+    border-radius: 0.5rem;
+  }
+  &_btn {
+    &--accent {
+      background-color: g.$accent-light;
+      color: g.$font-color;
+    }
+    &--accent:hover {
+      background-color: g.$accent;
+      color: g.$primary;
+    }
+    &--danger {
+      background-color: g.$danger;
+      color: g.$primary;
+    }
+    &--danger:hover {
+      background-color: g.$danger-light;
+      color: g.$font-color;
     }
   }
 }

@@ -1,0 +1,20 @@
+@use "../globals" as g;
+
+.clipitem {
+  background-color: g.$primary;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  & p {
+    padding: 1rem 1rem 0;
+    word-wrap: break-word;
+  }
+  & .actions {
+    border: none;
+  }
+  & button {
+    height: 2rem;
+    width: 6rem;
+    margin: 0.5rem;
+    border-radius: 0.25rem;
+  }
+}

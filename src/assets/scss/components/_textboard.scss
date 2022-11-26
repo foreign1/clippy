@@ -1,0 +1,42 @@
+@use "../globals" as g;
+
+.clipboard-component {
+  & div {
+    margin-top: 1rem;
+    border-radius: 1rem;
+    border: 2px solid g.$accent;
+  }
+  & .inputBox {
+    padding: 1rem;
+    display: grid;
+    background-color: g.$accent;
+    grid-template-columns: 1fr;
+
+    @include breakpoint(medium) {
+      grid-template-columns: 2fr 1fr;
+    }
+
+    & textarea {
+      min-height: 4rem;
+      padding: 0.5rem;
+    }
+    & button {
+      height: 2.5rem;
+      border: 2px double g.$primary;
+      background-color: g.$accent-light;
+      color: g.$accent;
+      font-weight: 600;
+    }
+  }
+  & .clip-list {
+    background-color: g.$accent;
+    padding: 1rem;
+    padding-top: 0;
+    & .notice-empty-list {
+      
+      margin-top: 8rem;
+      margin-bottom: 8rem;
+      color: white;
+    }
+  }
+}
