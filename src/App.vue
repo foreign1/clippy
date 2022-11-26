@@ -2,6 +2,8 @@
   <div id="app">
     <SessionSelector v-if="!!!sessionId" :setSession="setSession" />
     <div v-else>
+      <!-- <Header :sessionId="sessionId" />
+      <TextBoard :clipArray="clipboard.text" /> -->
       <Header :sessionId="sessionId" />
       <TextBoard :clipArray="clipboard.text" />
     </div>
@@ -35,19 +37,6 @@ export default {
       this.sessionId = sessionId;
       this.clipboard = sessionObj;
     },
-    // async loadSessionData() {
-    //   const url = "http://localhost:8000/sessionData";
-    //   fetch(url, {
-    //     method: "POST",
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //     },
-    //     body: JSON.stringify({ sessionId: this.sessionId }),
-    //   })
-    //     .then((response) => response.json())
-    //     .then((data) => (this.clipboard = data.clipboard))
-    //     .catch((error) => (this.errorMessage = error));
-    // },
   },
   created() {
     eventBus.$on("addClipItem", (arg) => {
