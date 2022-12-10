@@ -4,5 +4,10 @@
   text-align: center;
   padding: 1rem;
   background: url("@/assets/images/app-bg.jpg");
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center center;
+  // background-color: black;
   min-height: 100vh;
 }
