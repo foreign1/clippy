@@ -15,10 +15,7 @@ body {
 
 button {
   cursor: pointer;
-}
-
-.u_margin_top-sm {
-  margin-top: 1rem;
+}/*# sourceMappingURL=index.css.map */em;
 }
 .u_margin_top-xsm {
   margin-top: 0.5rem;
@@ -47,11 +44,7 @@ button {
 .u_btn--danger:hover {
   background-color: rgb(255, 59, 59);
   color: black;
-}
-
-.onset {
-  max-width: 699px;
-  height: 100vh;
+}/*# sourceMappingURL=index.css.map */ht: 100vh;
   padding: 20px;
   margin: auto auto;
   background-color: #074B87;
@@ -191,13 +184,18 @@ button {
   text-align: center;
   padding: 1rem;
   background: url("@/assets/images/app-bg.jpg");
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center center;
   min-height: 100vh;
 }
 
 .clipboard-component div {
-  margin-top: 1rem;
   border-radius: 1rem;
   border: 2px solid #074B87;
+  max-width: 1000px;
+  margin: 1rem auto 0;
 }
 .clipboard-component .inputBox {
   padding: 1rem;
@@ -252,7 +250,6 @@ button {
   padding: 0.5rem;
 }
 .clipitem p {
-  text-align: start;
   padding: 1rem 1rem 0;
   word-wrap: break-word;
 }

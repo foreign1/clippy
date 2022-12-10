@@ -3,9 +3,11 @@
 
 .clipboard-component {
   & div {
-    margin-top: 1rem;
+    // margin-top: 1rem;
     border-radius: 1rem;
     border: 2px solid g.$accent;
+    max-width: 1000px;
+    margin: 1rem auto 0;
   }
   & .inputBox {
     padding: 1rem;
