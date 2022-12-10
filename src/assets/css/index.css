@@ -178,6 +178,10 @@ button {
   border-radius: clamp(0.2rem, 0.1rem + 1vw, 0.5rem);
 }
 
+.tab:hover {
+  cursor: pointer;
+}
+
 #app {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
