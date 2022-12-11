@@ -3,7 +3,7 @@
 
 .onset {
   max-width: 699px;
-  height: 100vh;
+  height: calc(100vh - 2rem);
   padding: 20px;
   margin: auto auto;
   background-color: g.$accent;
