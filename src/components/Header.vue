@@ -5,9 +5,9 @@
       <button @click="copyId">{{ copyBtnText }}</button>
     </h1>
     <div>
-      <span class="tab active">Text</span>
-      <span class="tab">Image</span>
-      <span class="tab">File</span>
+      <!-- <span class="tab active">Text</span> -->
+      <!-- <span class="tab">Image</span>
+      <span class="tab">File</span> -->
     </div>
   </div>
 </template>
