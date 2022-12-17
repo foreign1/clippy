@@ -1,5 +1,6 @@
 <template>
   <div class="onset">
+    <LoaderVue v-if="loading"></LoaderVue>
     <div class="onset_header">
       <img alt="Clippy logo" src="@/assets/images/logo.png" />
       <h1 class="onset_header-text">Your clipboard companion</h1>
@@ -33,6 +34,7 @@
   </div>
 </template>
 <script>
+import LoaderVue from "./Loader.vue";
 export default {
   name: "SessionSelector",
   props: {
@@ -41,17 +43,22 @@ export default {
       required: true,
     },
   },
+  components: {
+    LoaderVue,
+  },
   data() {
     return {
       notice: "",
       sessionId: "",
       errorMessage: "",
+      loading: false,
       urlCreate: process.env.VUE_APP_CREATE_SESSION,
       urlJoin: process.env.VUE_APP_JOIN_SESSION,
     };
   },
   methods: {
     async createSession() {
+      this.loading = !this.loading;
       fetch(this.urlCreate)
         .then((response) => {
           if (response.status !== 201) {
@@ -63,10 +70,15 @@ export default {
           const sessionId = data.sessionId;
           const confObj = data.session[data.sessionId];
           this.setSession(sessionId, confObj);
+          this.loading = !this.loading;
         })
-        .catch(() => (this.notice = `Please check your network connection!`));
+        .catch(() => {
+          this.notice = `Please check your network connection!`;
+          this.loading = !this.loading;
+        });
     },
     async joinSession() {
+      this.loading = !this.loading;
       fetch(this.urlJoin, {
         method: "POST",
         headers: {
@@ -82,11 +94,14 @@ export default {
         })
         .then((data) => {
           const sessionId = data.sessionId;
-          console.log(data);
           const confObj = data.session[data.sessionId];
           this.setSession(sessionId, confObj);
+          this.loading = !this.loading;
         })
-        .catch((error) => (this.errorMessage = error));
+        .catch((error) => {
+          this.errorMessage = error;
+          this.loading = !this.loading;
+        });
     },
     // setSession(sessionId, sessionObj) {
     //   this.$emit("setSession", (sessionId, sessionObj));
