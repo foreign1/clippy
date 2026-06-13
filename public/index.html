@@ -1,17 +1,181 @@
 <!DOCTYPE html>
-<html lang="">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <link rel="icon" href="<%= BASE_URL %>favicon.ico">
-    <title><%= htmlWebpackPlugin.options.title %></title>
-  </head>
-  <body>
-    <noscript>
-      <strong>We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
-    </noscript>
-    <div id="app"></div>
-    <!-- built files will be auto injected -->
-  </body>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LANtern - Offline Local Sharing</title>
+  <!-- Modern Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <!-- Ambient Moving Background Orbs (Antigravity spatial depth) -->
+  <div class="ambient-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Drag and Drop Overlay -->
+  <div id="drag-overlay" class="drag-overlay">
+    <div class="drag-card">
+      <svg class="drag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+      </svg>
+      <h2>Drop files anywhere to share</h2>
+      <p>Supports files up to <span id="drag-limit">-- MB</span></p>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo">
+          <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1A3.75 3.75 0 0012 18z" />
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1A3.75 3.75 0 0012 18z" />
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M12 2.25V4.5m0 15v2.25m6.75-15h-2.25m2.25 7.5h-2.25m-12-7.5h2.25m-2.25 7.5h2.25m12.75-6.75l-1.59 1.59m-11.82 8.64l-1.59 1.59m15-1.59l-1.59-1.59m-11.82-8.64l-1.59-1.59" />
+          </svg>
+          <span class="logo-text">LANtern</span>
+        </div>
+        <div class="status-badge" id="connection-status">
+          <span class="pulse-indicator disconnected"></span>
+          <span class="status-text">Connecting...</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Nickname pill -->
+        <button class="pill-btn nickname-pill" id="nickname-btn" title="Change nickname">
+          <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+          </svg>
+          <span id="current-nickname">Anonymous</span>
+        </button>
+
+        <!-- Connected peers count -->
+        <div class="pill peer-pill">
+          <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+          </svg>
+          <span id="peer-count">0 connected</span>
+        </div>
+
+        <!-- File upload limit pill -->
+        <div class="pill limit-pill">
+          <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286zm0 13.036h.008v.008H12v-.008z" />
+          </svg>
+          <span id="max-limit-badge">Limit: -- MB</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Message Stream -->
+    <main class="feed-container" id="chat-feed">
+      <div class="feed-welcome-card">
+        <h2>Welcome to LANtern! 💡</h2>
+        <p>You can share messages and files with any device on this local network.</p>
+        <div class="network-share-box">
+          <span class="share-label">Share this link:</span>
+          <div class="share-link-wrapper">
+            <input type="text" id="share-link-input" readonly value="Detecting local network URLs...">
+            <button id="copy-link-btn" title="Copy link">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376A8.965 8.965 0 0012 12.75a8.965 8.965 0 00-3.75 4.5m9-9V5.25c0-.621-.504-1.125-1.125-1.125h-9.75a1.125 1.125 0 00-1.125 1.125v3.375m1.5 0h-.008v-.008H3.75v.008zm15 0h-.008v-.008h-.008v.008zm0 2.25h-.008v-.008H18v.008zm0 2.25h-.008v-.008H18v.008z" />
+              </svg>
+            </button>
+          </div>
+          <!-- QR Code section -->
+          <div id="qrcode-container" class="qrcode-container hidden">
+            <p class="qrcode-label">Or scan to connect instantly</p>
+            <img id="qrcode-img" src="" alt="LANtern Connection QR Code">
+          </div>
+        </div>
+        <p class="developer-credit">Created by <a href="https://github.com/foreign1"
+            target="_blank">github.com/foreign1</a></p>
+      </div>
+      <!-- Messages and files stream will be injected here dynamically -->
+      <div id="messages-list"></div>
+    </main>
+
+    <!-- Upload Progress Toast (Floating Card) -->
+    <div class="upload-progress-card hidden" id="upload-progress-card">
+      <div class="progress-details">
+        <span class="progress-filename" id="progress-filename">filename.zip</span>
+        <span class="progress-pct" id="progress-pct">0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-bar-fill"></div>
+      </div>
+      <div class="progress-stats">
+        <span id="progress-bytes">0 / 0 MB</span>
+        <button class="progress-cancel-btn" id="cancel-upload-btn">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Sticky Footer / Action Bar -->
+    <footer class="app-footer">
+      <form class="action-bar-form" id="action-form">
+        <!-- Hidden input for file picking -->
+        <input type="file" id="file-input" class="hidden">
+
+        <!-- Attachment button -->
+        <button type="button" class="action-btn attach-btn" id="attach-btn" title="Attach file">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M18.364 5.636l-3.536 3.536m0 0A3 3 0 1010.586 13.5l3.536-3.536m0 0l-3.536 3.536m0 0a3 3 0 11-4.243-4.243l3.536-3.536M18.364 5.636a9 9 0 11-12.728 12.728l1.414-1.414m11.314-11.314a9 9 0 011.414 1.414" />
+          </svg>
+        </button>
+
+        <!-- Message inputs -->
+        <div class="input-wrapper">
+          <input type="text" id="message-input" placeholder="Type a message or drop a file here..." autocomplete="off">
+        </div>
+
+        <!-- Send button -->
+        <button type="submit" class="action-btn send-btn" id="send-btn" title="Send message">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+          </svg>
+        </button>
+      </form>
+    </footer>
+  </div>
+
+  <!-- Nickname Change Modal -->
+  <div id="nickname-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3>Choose your nickname</h3>
+      <p>This is how other peers on the LAN will see you.</p>
+      <form id="nickname-form">
+        <input type="text" id="modal-nickname-input" required maxlength="25" placeholder="Enter Nickname...">
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="modal-cancel-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Client JavaScript -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+
 </html>
