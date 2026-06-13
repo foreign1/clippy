@@ -5,6 +5,9 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const QRCode = require('qrcode');
+const readline = require('readline');
+
+let PORT = parseInt(process.env.PORT || '3000', 10);
 
 const app = express();
 const server = http.createServer(app);
@@ -84,6 +87,7 @@ app.get('/api/config', async (req, res) => {
   }
 
   res.json({
+    signature: 'lantern',
     maxFileSizeMb,
     isMobile,
     localIPs,
@@ -257,22 +261,121 @@ io.on('connection', (socket) => {
   });
 });
 
-// Listen on Port 3000
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-  const localIPs = getLocalIPs();
-  console.log('\n=================================================');
-  console.log('   💡 LANtern - Local Wi-Fi Sharing Server 💡');
-  console.log('=================================================');
-  console.log(`Host localhost: http://localhost:${PORT}`);
-  if (localIPs.length > 0) {
-    console.log('Devices on the same network can connect to:');
-    localIPs.forEach((ip) => {
-      console.log(` http://${ip}:${PORT}`);
+// Helper to check if a port is in use and if it is a LANtern instance
+function checkPort(port) {
+  return new Promise((resolve) => {
+    const testServer = http.createServer();
+    testServer.once('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        getLanternInfo(port).then((lanternInfo) => {
+          if (lanternInfo) {
+            resolve({ inUse: true, isLantern: true, primaryURL: lanternInfo.primaryURL });
+          } else {
+            resolve({ inUse: true, isLantern: false });
+          }
+        });
+      } else {
+        resolve({ inUse: true, isLantern: false });
+      }
     });
-  } else {
-    console.log('No active network connections detected.');
-    console.log('Connect this device to a local Wi-Fi or turn on Hotspot.');
+    testServer.once('listening', () => {
+      testServer.close(() => {
+        resolve({ inUse: false, isLantern: false });
+      });
+    });
+    testServer.listen(port, '0.0.0.0');
+  });
+}
+
+// Helper to query the port and check if LANtern signature is present
+function getLanternInfo(port) {
+  return new Promise((resolve) => {
+    const req = http.get(`http://localhost:${port}/api/config`, { timeout: 1000 }, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          if (json && json.signature === 'lantern') {
+            resolve({ primaryURL: json.primaryURL });
+          } else {
+            resolve(null);
+          }
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    });
+    req.on('error', () => {
+      resolve(null);
+    });
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(null);
+    });
+  });
+}
+
+// Prompt utility using readline
+function askQuestion(query) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  return new Promise((resolve) => {
+    rl.question(query, (answer) => {
+      rl.close();
+      resolve(answer);
+    });
+  });
+}
+
+// Server startup with port fallback and LANtern collision checking
+async function startServer() {
+  let port = PORT;
+  while (true) {
+    const status = await checkPort(port);
+    if (!status.inUse) {
+      PORT = port;
+      break;
+    }
+
+    if (status.isLantern) {
+      const runningUrl = status.primaryURL || `http://localhost:${port}`;
+      console.log(`\n⚠️  Another instance of LANtern is already running on ${runningUrl}`);
+      const answer = await askQuestion('Would you still like to proceed to create another instance? (y/N): ');
+      if (answer.toLowerCase() === 'y') {
+        console.log(`Searching for the next available port...`);
+        port++;
+      } else {
+        console.log('Exiting.');
+        process.exit(0);
+      }
+    } else {
+      // Entirely different process using the port, silently fallback to the next available port
+      port++;
+    }
   }
-  console.log('=================================================\n');
-});
+
+  server.listen(PORT, '0.0.0.0', () => {
+    const localIPs = getLocalIPs();
+    console.log('\n=================================================');
+    console.log('   💡 LANtern - Local Wi-Fi Sharing Server 💡');
+    console.log('=================================================');
+    console.log(`Host localhost: http://localhost:${PORT}`);
+    if (localIPs.length > 0) {
+      console.log('Devices on the same network can connect to:');
+      localIPs.forEach((ip) => {
+        console.log(` http://${ip}:${PORT}`);
+      });
+    } else {
+      console.log('No active network connections detected.');
+      console.log('Connect this device to a local Wi-Fi or turn on Hotspot.');
+    }
+    console.log('=================================================\n');
+  });
+}
+
+startServer();
