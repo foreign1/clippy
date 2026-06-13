@@ -102,6 +102,12 @@ Set the `MAX_FILE_SIZE_MB` and `PORT` environment variables to override defaults
 PORT=8080 MAX_FILE_SIZE_MB=500 npm start
 ```
 
+### Port Collision Handling
+When starting LANtern, if the target port (default `3000`) is already in use:
+1. **By another LANtern instance:** The startup process will notify you of the active instance's URL and prompt you: `Would you still like to proceed to create another instance? (y/N)`. Answering `y` or `Y` will spin up the new instance on the next available port.
+2. **By an entirely different process:** LANtern will automatically fall back to the next available port (e.g. `3001`) without prompting.
+
+
 ---
 
 ## ♿ Accessibility & Motion
