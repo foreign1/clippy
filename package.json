@@ -1,0 +1,20 @@
+{
+  "name": "lantern",
+  "version": "1.0.0",
+  "description": "Offline-first real-time text and file sharing over local Wi-Fi",
+  "author": "(https://github.com/foreign1)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.7.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "private": true
+}
