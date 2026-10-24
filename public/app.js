@@ -4,6 +4,9 @@
 let currentNickname = '';
 let maxFileSizeBytes = 0; // Configured dynamically
 let currentUploadController = null; // For canceling uploads
+const uploadQueue = []; // Queue for sequential multi-file uploads
+let isUploading = false;
+let isCancelingUpload = false;
 
 // DOM Elements
 const chatFeed = document.getElementById('chat-feed');
@@ -22,6 +25,9 @@ const shareLinkInput = document.getElementById('share-link-input');
 const copyLinkBtn = document.getElementById('copy-link-btn');
 const qrcodeContainer = document.getElementById('qrcode-container');
 const qrcodeImg = document.getElementById('qrcode-img');
+const downloadAllBtn = document.getElementById('download-all-btn');
+const mediaCountSpan = document.getElementById('media-count');
+let sessionMediaCount = 0;
 
 // Progress Overlay & Modal
 const uploadProgressCard = document.getElementById('upload-progress-card');
@@ -69,7 +75,12 @@ socket.on('peer-count-update', (count) => {
 
 socket.on('session-sync', (history) => {
   messagesList.innerHTML = '';
-  history.forEach(item => renderItem(item));
+  sessionMediaCount = 0;
+  history.forEach(item => {
+    if (item.type === 'file') sessionMediaCount++;
+    renderItem(item);
+  });
+  updateDownloadAllButton();
   setTimeout(scrollToBottom, 50);
 });
 
@@ -82,12 +93,27 @@ socket.on('chat-message', (msg) => {
 });
 
 socket.on('file-shared', (fileMsg) => {
+  sessionMediaCount++;
+  updateDownloadAllButton();
   renderItem(fileMsg);
   scrollToBottomConditional();
   if (fileMsg.sender !== currentNickname) {
     playNotificationSound();
   }
 });
+
+function updateDownloadAllButton() {
+  if (!downloadAllBtn) return;
+  if (sessionMediaCount > 0) {
+    downloadAllBtn.classList.remove('hidden');
+    if (mediaCountSpan) {
+      mediaCountSpan.textContent = sessionMediaCount;
+    }
+    downloadAllBtn.title = `Download all ${sessionMediaCount} media file${sessionMediaCount > 1 ? 's' : ''} as ZIP`;
+  } else {
+    downloadAllBtn.classList.add('hidden');
+  }
+}
 
 // 3. UI Helpers
 function updateStatus(isConnected) {
@@ -208,6 +234,67 @@ function scrollToBottomConditional() {
   }
 }
 
+// Copy text to clipboard (works on HTTPS/localhost and non-secure LAN HTTP)
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.warn('navigator.clipboard failed, attempting fallback:', err);
+    }
+  }
+
+  // Fallback using temporary textarea + execCommand for LAN HTTP environments
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    textArea.style.top = '0';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (err) {
+    console.error('Clipboard copy failed:', err);
+    return false;
+  }
+}
+
+function showCopyFeedback(bubble) {
+  // Pulse animation on bubble
+  bubble.classList.remove('bubble-copied');
+  void bubble.offsetWidth; // Force reflow
+  bubble.classList.add('bubble-copied');
+
+  // Remove any preexisting copy tooltip on this bubble
+  const existing = bubble.querySelector('.copy-tooltip');
+  if (existing) existing.remove();
+
+  const tip = document.createElement('div');
+  tip.className = 'copy-tooltip';
+  tip.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+    </svg>
+    <span>Copied!</span>
+  `;
+  bubble.appendChild(tip);
+
+  requestAnimationFrame(() => {
+    tip.classList.add('show');
+  });
+
+  setTimeout(() => {
+    tip.classList.remove('show');
+    setTimeout(() => tip.remove(), 250);
+  }, 1400);
+}
+
 // 4. Render feed item (Text or File Card)
 function renderItem(item) {
   const isOwn = item.sender === currentNickname;
@@ -223,6 +310,21 @@ function renderItem(item) {
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
     bubble.textContent = item.text;
+    bubble.title = 'Click to copy text';
+
+    bubble.addEventListener('click', async () => {
+      // Don't copy if user is selecting/highlighting text manually
+      const selection = window.getSelection();
+      if (selection && selection.toString().length > 0) {
+        return;
+      }
+
+      const success = await copyTextToClipboard(item.text);
+      if (success) {
+        showCopyFeedback(bubble);
+      }
+    });
+
     wrapper.appendChild(bubble);
   } else if (item.type === 'file') {
     const card = document.createElement('div');
@@ -324,10 +426,11 @@ function getFileIcon(item) {
 // 5. Form Submissions & Event Listeners
 
 // Copy Share URL
-copyLinkBtn.addEventListener('click', () => {
+copyLinkBtn.addEventListener('click', async () => {
   shareLinkInput.select();
   shareLinkInput.setSelectionRange(0, 99999);
-  navigator.clipboard.writeText(shareLinkInput.value).then(() => {
+  const success = await copyTextToClipboard(shareLinkInput.value);
+  if (success) {
     // Show visual feedback on button
     const originalHTML = copyLinkBtn.innerHTML;
     copyLinkBtn.innerHTML = `
@@ -338,8 +441,36 @@ copyLinkBtn.addEventListener('click', () => {
     setTimeout(() => {
       copyLinkBtn.innerHTML = originalHTML;
     }, 2000);
-  });
+  }
 });
+
+// Download All Media as ZIP
+if (downloadAllBtn) {
+  downloadAllBtn.addEventListener('click', () => {
+    if (sessionMediaCount === 0) return;
+
+    const originalHTML = downloadAllBtn.innerHTML;
+    downloadAllBtn.innerHTML = `
+      <svg class="pill-icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+      </svg>
+      <span>Downloading...</span>
+    `;
+
+    const a = document.createElement('a');
+    a.href = '/api/download-all';
+    a.setAttribute('download', '');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => {
+      downloadAllBtn.innerHTML = originalHTML;
+      const countSpan = document.getElementById('media-count');
+      if (countSpan) countSpan.textContent = sessionMediaCount;
+    }, 2500);
+  });
+}
 
 // Message Send Form
 actionForm.addEventListener('submit', (e) => {
@@ -362,8 +493,8 @@ attachBtn.addEventListener('click', () => {
 });
 
 fileInput.addEventListener('change', (e) => {
-  if (e.target.files.length > 0) {
-    handleFileSelect(e.target.files[0]);
+  if (e.target.files && e.target.files.length > 0) {
+    handleFilesSelect(e.target.files);
     fileInput.value = ''; // Reset file picker value
   }
 });
@@ -390,8 +521,8 @@ dragOverlay.addEventListener('drop', (e) => {
   e.preventDefault();
   dragOverlay.classList.remove('active');
 
-  if (e.dataTransfer.files.length > 0) {
-    handleFileSelect(e.dataTransfer.files[0]);
+  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    handleFilesSelect(e.dataTransfer.files);
   }
 });
 
@@ -417,34 +548,67 @@ nicknameForm.addEventListener('submit', (e) => {
   }
 });
 
-// 8. Chunked Upload Operations
-async function handleFileSelect(file) {
-  // Check file size limits
-  if (maxFileSizeBytes > 0 && file.size > maxFileSizeBytes) {
-    alert(`File is too large! Maximum limit is ${formatBytes(maxFileSizeBytes)}.\nYour file: ${formatBytes(file.size)}.`);
+// 8. Chunked Upload Operations & Multi-File Queue
+function handleFilesSelect(fileList) {
+  if (!fileList || fileList.length === 0) return;
+
+  const validFiles = [];
+  for (const file of Array.from(fileList)) {
+    if (maxFileSizeBytes > 0 && file.size > maxFileSizeBytes) {
+      alert(`File "${file.name}" is too large! Maximum limit is ${formatBytes(maxFileSizeBytes)}.\nYour file: ${formatBytes(file.size)}.`);
+      continue;
+    }
+    validFiles.push(file);
+  }
+
+  if (validFiles.length === 0) return;
+
+  uploadQueue.push(...validFiles);
+  processUploadQueue();
+}
+
+async function processUploadQueue() {
+  if (isUploading) return;
+  if (uploadQueue.length === 0) {
+    hideUploadProgress();
     return;
   }
 
-  // Cancel any active upload
-  if (currentUploadController) {
-    currentUploadController.abort();
-  }
+  isUploading = true;
+  isCancelingUpload = false;
 
-  currentUploadController = new AbortController();
-  const signal = currentUploadController.signal;
+  const initialBatchCount = uploadQueue.length;
+  let batchIndex = 0;
 
-  try {
-    showUploadProgress(file.name);
-    await uploadFileInChunks(file, signal);
-  } catch (err) {
-    if (err.name === 'AbortError') {
-      console.log('Upload aborted by user.');
-    } else {
-      console.error('Upload failed:', err);
-      alert(`Upload failed: ${err.message}`);
+  while (uploadQueue.length > 0) {
+    const file = uploadQueue[0];
+    batchIndex++;
+
+    const totalInBatch = Math.max(initialBatchCount, batchIndex + uploadQueue.length - 1);
+    const batchInfo = totalInBatch > 1 ? ` (${batchIndex}/${totalInBatch})` : '';
+
+    currentUploadController = new AbortController();
+    const signal = currentUploadController.signal;
+
+    try {
+      showUploadProgress(`${file.name}${batchInfo}`);
+      await uploadFileInChunks(file, signal, batchInfo);
+      uploadQueue.shift(); // Successfully uploaded, remove from queue
+    } catch (err) {
+      if (err.name === 'AbortError' || isCancelingUpload) {
+        console.log('Upload canceled by user.');
+        uploadQueue.length = 0; // Clear the entire queue on explicit cancel
+        break;
+      } else {
+        console.error('Upload failed:', err);
+        alert(`Upload failed for "${file.name}": ${err.message}`);
+        uploadQueue.shift(); // Move to next file in queue
+      }
     }
-    hideUploadProgress();
   }
+
+  hideUploadProgress();
+  isUploading = false;
 }
 
 function showUploadProgress(filename) {
@@ -461,13 +625,16 @@ function hideUploadProgress() {
 }
 
 cancelUploadBtn.addEventListener('click', () => {
+  isCancelingUpload = true;
+  uploadQueue.length = 0;
   if (currentUploadController) {
     currentUploadController.abort();
-    hideUploadProgress();
   }
+  hideUploadProgress();
+  isUploading = false;
 });
 
-async function uploadFileInChunks(file, signal) {
+async function uploadFileInChunks(file, signal, batchInfo = '') {
   const CHUNK_SIZE = 2 * 1024 * 1024; // 2 MB Chunks
   const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
   const uploadId = crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).substr(2, 9));
@@ -498,13 +665,14 @@ async function uploadFileInChunks(file, signal) {
 
     // Update Progress UI
     const percent = Math.round((bytesUploaded / file.size) * 100);
+    progressFilename.textContent = `${file.name}${batchInfo}`;
     progressPct.textContent = `${percent}%`;
     progressBarFill.style.width = `${percent}%`;
     progressBytes.textContent = `${formatBytes(bytesUploaded)} / ${formatBytes(file.size)}`;
   }
 
   // Request chunk merge on server
-  progressFilename.textContent = "Merging file on host...";
+  progressFilename.textContent = `Merging ${file.name}...${batchInfo}`;
   const mergeResponse = await fetch('/api/merge-chunks', {
     method: 'POST',
     headers: {
@@ -535,8 +703,6 @@ async function uploadFileInChunks(file, signal) {
     isVideo: mergeData.isVideo,
     isAudio: mergeData.isAudio
   });
-
-  hideUploadProgress();
 }
 
 // 9. Initial Load Setup

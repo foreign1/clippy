@@ -6,6 +6,7 @@ const path = require('path');
 const os = require('os');
 const QRCode = require('qrcode');
 const readline = require('readline');
+const zlib = require('zlib');
 
 let PORT = parseInt(process.env.PORT || '3000', 10);
 
@@ -215,6 +216,149 @@ app.get('/download/:filename', (req, res) => {
     res.download(filePath, req.params.filename);
   } else {
     res.sendFile(filePath);
+  }
+});
+
+// Helper: Stream a standard ZIP archive with zero external dependencies and constant memory
+async function streamZipArchive(files, res) {
+  let offset = 0;
+  const cdEntries = [];
+
+  for (const file of files) {
+    const filenameBuf = Buffer.from(file.filename, 'utf8');
+    const stat = fs.statSync(file.filePath);
+    const size = stat.size;
+
+    // Local Header (30 bytes)
+    const localHeader = Buffer.alloc(30);
+    localHeader.writeUInt32LE(0x04034b50, 0); // Local header signature
+    localHeader.writeUInt16LE(20, 4); // Version needed (2.0)
+    localHeader.writeUInt16LE(0x0808, 6); // Flags: UTF-8 (bit 11) + Data Descriptor (bit 3)
+    localHeader.writeUInt16LE(0, 8); // Method: Store (0)
+    localHeader.writeUInt16LE(0, 10); // Time (00:00:00)
+    localHeader.writeUInt16LE(0, 12); // Date (1980-00-00)
+    localHeader.writeUInt32LE(0, 14); // CRC-32 (0 when data descriptor used)
+    localHeader.writeUInt32LE(0, 18); // Compressed size
+    localHeader.writeUInt32LE(0, 22); // Uncompressed size
+    localHeader.writeUInt16LE(filenameBuf.length, 26);
+    localHeader.writeUInt16LE(0, 28); // Extra field len
+
+    res.write(localHeader);
+    res.write(filenameBuf);
+
+    // Stream file data and calculate CRC32 progressively
+    let crc = 0;
+    await new Promise((resolve, reject) => {
+      const readStream = fs.createReadStream(file.filePath);
+      readStream.on('data', (chunk) => {
+        crc = zlib.crc32(chunk, crc);
+        res.write(chunk);
+      });
+      readStream.on('end', resolve);
+      readStream.on('error', reject);
+    });
+
+    // Data Descriptor (16 bytes)
+    const descriptor = Buffer.alloc(16);
+    descriptor.writeUInt32LE(0x08074b50, 0); // Data descriptor signature
+    descriptor.writeUInt32LE(crc, 4);
+    descriptor.writeUInt32LE(size, 8); // Compressed size
+    descriptor.writeUInt32LE(size, 12); // Uncompressed size
+    res.write(descriptor);
+
+    // Central Directory Header (46 bytes)
+    const cdHeader = Buffer.alloc(46);
+    cdHeader.writeUInt32LE(0x02014b50, 0); // CD signature
+    cdHeader.writeUInt16LE(20, 4); // Version made by
+    cdHeader.writeUInt16LE(20, 6); // Version needed
+    cdHeader.writeUInt16LE(0x0808, 8); // Flags: UTF-8 + Data Descriptor
+    cdHeader.writeUInt16LE(0, 10); // Method: Store
+    cdHeader.writeUInt16LE(0, 12); // Time
+    cdHeader.writeUInt16LE(0, 14); // Date
+    cdHeader.writeUInt32LE(crc, 16);
+    cdHeader.writeUInt32LE(size, 20); // Compressed size
+    cdHeader.writeUInt32LE(size, 24); // Uncompressed size
+    cdHeader.writeUInt16LE(filenameBuf.length, 28);
+    cdHeader.writeUInt16LE(0, 30); // Extra len
+    cdHeader.writeUInt16LE(0, 32); // Comment len
+    cdHeader.writeUInt16LE(0, 34); // Disk start
+    cdHeader.writeUInt16LE(0, 36); // Internal attr
+    cdHeader.writeUInt32LE(0, 38); // External attr
+    cdHeader.writeUInt32LE(offset, 42); // Relative offset of local header
+
+    cdEntries.push(cdHeader, filenameBuf);
+    offset += localHeader.length + filenameBuf.length + size + descriptor.length;
+  }
+
+  // End of Central Directory Record (22 bytes)
+  const cdStart = offset;
+  let cdSize = 0;
+  for (const b of cdEntries) cdSize += b.length;
+
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0); // EOCD signature
+  eocd.writeUInt16LE(0, 4); // Disk number
+  eocd.writeUInt16LE(0, 6); // Disk where CD starts
+  eocd.writeUInt16LE(files.length, 8); // Entries on disk
+  eocd.writeUInt16LE(files.length, 10); // Total entries
+  eocd.writeUInt32LE(cdSize, 12); // Size of CD
+  eocd.writeUInt32LE(cdStart, 16); // CD start offset
+  eocd.writeUInt16LE(0, 20); // Comment length
+
+  for (const entry of cdEntries) {
+    res.write(entry);
+  }
+  res.write(eocd);
+  res.end();
+}
+
+// Download All media in session as a ZIP archive
+app.get('/api/download-all', async (req, res) => {
+  const fileItems = sessionHistory.filter(item => item.type === 'file');
+  const filesToZip = [];
+  const seenFilenames = new Set();
+
+  for (const item of fileItems) {
+    const filePath = path.join(uploadsDir, item.filename);
+    if (fs.existsSync(filePath) && !seenFilenames.has(item.filename)) {
+      seenFilenames.add(item.filename);
+      filesToZip.push({
+        filename: item.filename,
+        filePath: filePath
+      });
+    }
+  }
+
+  // Fallback: If no files in session history, check uploadsDir
+  if (filesToZip.length === 0 && fs.existsSync(uploadsDir)) {
+    const dirFiles = fs.readdirSync(uploadsDir);
+    for (const f of dirFiles) {
+      if (!f.startsWith('tmp-')) {
+        const filePath = path.join(uploadsDir, f);
+        if (fs.statSync(filePath).isFile()) {
+          filesToZip.push({ filename: f, filePath });
+        }
+      }
+    }
+  }
+
+  if (filesToZip.length === 0) {
+    return res.status(404).send('No media files found to download');
+  }
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const zipFilename = `lantern-media-${timestamp}.zip`;
+
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="${zipFilename}"`);
+
+  try {
+    await streamZipArchive(filesToZip, res);
+  } catch (err) {
+    console.error('Error streaming download-all ZIP archive:', err);
+    if (!res.headersSent) {
+      res.status(500).send('Failed to generate archive');
+    }
   }
 });
 
