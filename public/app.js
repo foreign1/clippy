@@ -25,6 +25,9 @@ const shareLinkInput = document.getElementById('share-link-input');
 const copyLinkBtn = document.getElementById('copy-link-btn');
 const qrcodeContainer = document.getElementById('qrcode-container');
 const qrcodeImg = document.getElementById('qrcode-img');
+const downloadAllBtn = document.getElementById('download-all-btn');
+const mediaCountSpan = document.getElementById('media-count');
+let sessionMediaCount = 0;
 
 // Progress Overlay & Modal
 const uploadProgressCard = document.getElementById('upload-progress-card');
@@ -72,7 +75,12 @@ socket.on('peer-count-update', (count) => {
 
 socket.on('session-sync', (history) => {
   messagesList.innerHTML = '';
-  history.forEach(item => renderItem(item));
+  sessionMediaCount = 0;
+  history.forEach(item => {
+    if (item.type === 'file') sessionMediaCount++;
+    renderItem(item);
+  });
+  updateDownloadAllButton();
   setTimeout(scrollToBottom, 50);
 });
 
@@ -85,12 +93,27 @@ socket.on('chat-message', (msg) => {
 });
 
 socket.on('file-shared', (fileMsg) => {
+  sessionMediaCount++;
+  updateDownloadAllButton();
   renderItem(fileMsg);
   scrollToBottomConditional();
   if (fileMsg.sender !== currentNickname) {
     playNotificationSound();
   }
 });
+
+function updateDownloadAllButton() {
+  if (!downloadAllBtn) return;
+  if (sessionMediaCount > 0) {
+    downloadAllBtn.classList.remove('hidden');
+    if (mediaCountSpan) {
+      mediaCountSpan.textContent = sessionMediaCount;
+    }
+    downloadAllBtn.title = `Download all ${sessionMediaCount} media file${sessionMediaCount > 1 ? 's' : ''} as ZIP`;
+  } else {
+    downloadAllBtn.classList.add('hidden');
+  }
+}
 
 // 3. UI Helpers
 function updateStatus(isConnected) {
@@ -420,6 +443,34 @@ copyLinkBtn.addEventListener('click', async () => {
     }, 2000);
   }
 });
+
+// Download All Media as ZIP
+if (downloadAllBtn) {
+  downloadAllBtn.addEventListener('click', () => {
+    if (sessionMediaCount === 0) return;
+
+    const originalHTML = downloadAllBtn.innerHTML;
+    downloadAllBtn.innerHTML = `
+      <svg class="pill-icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+      </svg>
+      <span>Downloading...</span>
+    `;
+
+    const a = document.createElement('a');
+    a.href = '/api/download-all';
+    a.setAttribute('download', '');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => {
+      downloadAllBtn.innerHTML = originalHTML;
+      const countSpan = document.getElementById('media-count');
+      if (countSpan) countSpan.textContent = sessionMediaCount;
+    }, 2500);
+  });
+}
 
 // Message Send Form
 actionForm.addEventListener('submit', (e) => {

@@ -261,6 +261,32 @@ body {
   transform: translateY(0) scale(0.96);
 }
 
+.download-all-pill {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #10b981;
+}
+
+.download-all-pill .pill-icon {
+  color: #10b981;
+}
+
+.download-all-pill:hover {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: #10b981;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  transform: translateY(-2px);
+}
+
+.spin {
+  animation: spin-anim 1s linear infinite;
+}
+
+@keyframes spin-anim {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Feed Area */
 .feed-container {
   flex: 1;
