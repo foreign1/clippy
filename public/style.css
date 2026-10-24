@@ -406,12 +406,68 @@ body {
 
 /* Chat bubble styling */
 .message-bubble {
+  position: relative;
   padding: 12px 16px;
   border-radius: 18px;
   font-size: 14px;
   line-height: 1.5;
   box-shadow: var(--shadow-light);
   word-break: break-word;
+  cursor: pointer;
+  user-select: text;
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.message-bubble:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.message-bubble:active {
+  transform: scale(0.98);
+}
+
+.message-bubble.bubble-copied {
+  animation: bubble-copied-pulse 0.3s ease;
+}
+
+@keyframes bubble-copied-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+/* Copy notification floating badge */
+.copy-tooltip {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: rgba(16, 185, 129, 0.95);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.copy-tooltip svg {
+  width: 12px;
+  height: 12px;
+}
+
+.copy-tooltip.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 .message-wrapper.own .message-bubble {
