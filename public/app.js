@@ -473,6 +473,19 @@ if (downloadAllBtn) {
 }
 
 // Message Send Form
+function resizeMessageInput() {
+  messageInput.style.height = 'auto';
+  messageInput.style.height = `${Math.min(messageInput.scrollHeight, 160)}px`;
+}
+
+messageInput.addEventListener('input', resizeMessageInput);
+messageInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    actionForm.requestSubmit();
+  }
+});
+
 actionForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const text = messageInput.value.trim();
@@ -484,6 +497,7 @@ actionForm.addEventListener('submit', (e) => {
   });
 
   messageInput.value = '';
+  resizeMessageInput();
   messageInput.focus();
 });
 

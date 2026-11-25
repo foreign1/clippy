@@ -8,7 +8,7 @@ No internet connection is required. One device acts as the host/server, and any 
 
 ## ✨ Features
 
-- 💬 **Real-Time Text Messaging:** Chat instantly with peers on your Wi-Fi network with persistent bi-directional communication.
+- 💬 **Real-Time Text Messaging:** Chat instantly with peers on your Wi-Fi network with persistent bi-directional communication and multi-line messages.
 - 📁 **High-Performance File Sharing:** Upload and download files of any size (up to 5 GB on PC) using robust, memory-efficient client-side file slicing and server-side binary stream chunk merging.
 - 🖼️ **Media Previews:** Inline browser previews for images, video streaming, and audio playback cards.
 - ⚡ **Zero-Configuration Access:** Late-joining clients automatically sync full chat history upon connecting.

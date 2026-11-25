@@ -439,6 +439,7 @@ body {
   line-height: 1.5;
   box-shadow: var(--shadow-light);
   word-break: break-word;
+  white-space: pre-wrap;
   cursor: pointer;
   user-select: text;
   transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
@@ -684,17 +685,22 @@ body {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.input-wrapper input {
+.input-wrapper textarea {
   width: 100%;
+  min-height: 40px;
+  max-height: 160px;
   background: transparent;
   border: none;
   color: var(--text-main);
   padding: 10px 14px;
   font-size: 14px;
+  line-height: 20px;
   outline: none;
+  resize: none;
+  overflow-y: auto;
 }
 
-.input-wrapper input::placeholder {
+.input-wrapper textarea::placeholder {
   color: var(--text-muted);
 }
 
